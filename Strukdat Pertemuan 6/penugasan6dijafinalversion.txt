@@ -1,0 +1,286 @@
+/*NAMA      : YEDIJA LEWI SURYADI
+ *NIM       : 222212921
+ *KELAS     : 2KS1
+ *NO. ABSEN : 36
+ STRUKTUR DATA MODUL 6:
+    Modifikasi program konversi bilangan desimal ke biner yang telah kita buat, dengan
+    ketentuan sebagai berikut:
+    1. Buatlah sebuah fungsi konversi, agar fungsi utama/ main dalam program di
+    atas menjadi lebih sederhana.
+    2. Ubah program konversi desimal ke biner di atas menjadi menggunakan linked
+    list.
+    3. Modifikasi program tersebut agar bisa juga mengkonversi bilangan desimal
+    negatif.
+    4. Tambahkan sebuah fungsi yang dapat mengkonversi bilangan desimal
+    menjadi bilangan oktal. Sehingga pertama kali program dijalankan, user dapat
+    memilih ingin mengkonversi bilangan desimal menjadi biner atau oktal.
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+
+//deklarasi stack dengan linked list
+struct node
+{
+    int value;
+    struct node *next;
+};
+
+typedef struct node *stack;
+stack TOP, TOPnegatif;
+
+
+void initialize(){
+    TOP = NULL;
+    TOPnegatif = NULL; //Stack TOPnegatif digunakan dalam kasus konversi desimal negatif ke biner
+}
+
+//fungsi push untuk stack TOP
+void push(int nilai){
+    stack New_Node;
+    New_Node = (stack)malloc(sizeof(struct node));
+    New_Node->value = nilai;
+    New_Node->next = TOP;
+    TOP = New_Node;
+}
+
+//fungsi push untuk stack TOPnegatif
+void pushNegatif(int nilai){
+    stack New_Node;
+    New_Node = (stack)malloc(sizeof(struct node));
+    New_Node->value = nilai;
+    New_Node->next = TOPnegatif;
+    TOPnegatif = New_Node;
+}
+
+//fungsi konversi desimal ke biner
+void Konversi_Biner(int bil_desimal){
+    //untuk bilangan nol
+    if(bil_desimal == 0){
+        return;
+    }
+    else{
+        int i, sisa_bagi;
+        //untuk bilangan negatif
+        if (bil_desimal<0)
+        {
+            //menggunakan konsep two-complement, diisi dalam Stack TOP
+            int bilangan = bil_desimal*(-1); //bilangan negatif dimutlakkan untuk mempermudah perhitungan
+            //perulangan 1, untuk penambahan 1 pada bentuk one-complement
+            do{
+                sisa_bagi = bilangan%2;
+                push(sisa_bagi);
+                bilangan = bilangan/2;
+            }
+            while (sisa_bagi != 1);
+            //perulangan 2, untuk one-complement
+            while (bilangan>0)
+            {
+                sisa_bagi = bilangan%2;
+                if (sisa_bagi==1)
+                    push(0);
+                else if (sisa_bagi==0)
+                    push(1);
+                bilangan = bilangan/2;
+            }
+
+            //menggunakan konsep biner biasa, diisi dalam Stack TOPnegatif
+            for (i = bil_desimal*(-1); i>0; i=i/2){
+                sisa_bagi = i%2;
+                pushNegatif(sisa_bagi);
+            };
+        }
+        //untuk bilangan positif
+        else{
+            for (i = bil_desimal; i>0; i=i/2){
+                sisa_bagi = i%2;
+                push(sisa_bagi);
+            };
+        }
+    };
+}
+
+//fungsi konversi desimal ke oktal
+void Konversi_Oktal(int bil_desimal){
+    //uhtuk bilangan nol
+    if(bil_desimal == 0){
+        return;
+    }
+    else{
+        int i, sisa_bagi;
+        //memutlakkan bilangan jika negatif untuk mempermudah perhitungan
+        if (bil_desimal<0) 
+            bil_desimal = bil_desimal*(-1); 
+        
+        for (i = bil_desimal; i>0; i=i/8){
+            sisa_bagi = i%8;
+            push(sisa_bagi);
+        };
+    };
+}
+
+/*fungsi menghitung bit hasil konversi desimal ke biner, digunakan untuk
+  proses mengubah desimal ke biner 8-bit atau 16-bit */
+int Hitung_Bit(stack TOP){
+    int bit = 0;
+    while (TOP!=NULL)
+    {
+        bit++;
+        TOP=TOP->next;
+    }
+    return bit;
+}
+
+//fungsi mencetak hasil konversi desimal ke biner
+void Cetak_Biner(stack TOP, int bit, int negatif, int bil_desimal){
+    if (TOP != NULL){
+        if(negatif == 0)
+            Cetak_BinerStandar(TOP, negatif);
+        else Cetak_BinerStandar(TOPnegatif, negatif);
+
+        //program untuk mencetak biner dengan konsep two-complement 8-bit dan 16-bit
+        //range 8-bit : -128 sampai 127
+        //range 16-bit: -32.768 sampai 32.767
+        if ((bil_desimal>=(-32768)) && (bil_desimal<=(32767))){
+            if ((bil_desimal>=(-128)) && (bil_desimal<=(127))){
+               Cetak_Biner8bit(TOP, bit, negatif);     
+            }
+            Cetak_Biner16bit(TOP, bit, negatif);
+        }
+    }
+    else{
+        puts("Hasil konversi ke biner           = 0");
+        puts("Hasil konversi ke biner (8 bit)   = 00000000");
+        puts("Hasil konversi ke biner (16 bit)  = 0000000000000000\n");
+    };
+}
+
+//fungsi bagian untuk mencetak hasil konversi desimal ke biner dalam aturan standar
+void Cetak_BinerStandar(stack TOP, int negatif){
+    printf("Hasil konversi ke biner           = ");
+    if (negatif==1)
+        printf("-");
+    while (TOP != NULL){
+        printf("%d", TOP->value);
+        TOP = TOP->next;
+    };
+    puts("");
+}
+
+//fungsi bagian untuk mencetak hasil konversi desimal ke biner dalam 8-bit
+void Cetak_Biner8bit(stack TOP, int bit, int negatif){
+    int pengisi = 0; //pengisi digunakan untuk mengisi stack agar genap 8-bit sesuai aturan
+    if (negatif==1)
+        pengisi = 1; //pengisi 1 untuk memenuhi aturan two-complement dalam kasus bilangan desimal negatif ke biner
+    printf("Hasil konversi ke biner (8 bit)   = ");
+    //iterasi untuk pengisian digit-digit awal yang kosong agar genap 8 digit
+    for (int i = bit; i<8; i++)
+        printf("%d", pengisi);
+    
+    while (TOP != NULL){
+        printf("%d", TOP->value);
+        TOP = TOP->next;
+    };
+    puts("");
+}
+
+//fungsi bagian untuk mencetak hasil konversi desimal ke biner dalam 16-bit
+void Cetak_Biner16bit(stack TOP, int bit, int negatif){
+    int pengisi = 0; //pengisi digunakan untuk mengisi stack agar genap 16-bit sesuai aturan
+    if (negatif==1)
+        pengisi = 1; //pengisi 1 untuk memenuhi aturan two-complement dalam kasus bilangan desimal negatif ke biner
+    printf("Hasil konversi ke biner (16 bit)  = ");
+    //iterasi untuk pengisian digit-digit awal yang kosong agar genap 16 digit
+    for (int i = bit; i<16; i++)
+        printf("%d", pengisi);
+    
+    while (TOP != NULL){
+        printf("%d", TOP->value);
+        TOP = TOP->next;
+    };
+    puts("");
+}
+
+//fungsi mencetak hasil konversi ke oktal
+void Cetak_Oktal(stack TOP, int negatif){
+    printf("Hasil konversi ke oktal  = ");
+    //dalam kasus bilangan desimal negatif ke oktal, tinggal tambahkan lambang minus "-"
+    if (negatif == 1)
+        printf("-");    
+    while (TOP != NULL){
+        printf("%d", TOP->value);
+        TOP = TOP->next;
+    };
+    puts("");
+}
+
+//fungsi untuk menjeda program
+void jeda(){
+    int c;
+    puts("Tekan ENTER untuk melanjutkan...");
+    c = getchar();
+    getchar();
+}
+//fungsi untuk mereset stack
+stack reset_stack(stack TOP){
+    while (TOP!=NULL)
+    {
+        stack dummy = TOP;
+        TOP = TOP->next;
+        free(dummy);
+    };
+    return(TOP);   
+}
+
+int main(){
+    int bil_desimal, pilihan, bit, negatif; //variabel bit untuk menghitung berapa bit,
+    //variabel negatif untuk menentukan bilangan yang diinput negatif atau tidak.
+    system("cls");
+    puts("PROGRAM KONVERSI DESIMAL KE BINER ATAU OKTAL");
+    puts("============================================\n");
+    do{
+        puts("1. Desimal Ke Biner");
+        puts("2. Desimal Ke Oktal");
+        puts("3. Keluar\n");
+        printf("Pilihan Anda: ");
+        scanf("%d", &pilihan);
+        switch (pilihan){
+            case 1:
+                printf("\nMasukan bilangan desimal = ");
+                scanf("%d", &bil_desimal);
+                //pengecekan apakah input adalah bilangan negatif
+                negatif = 0;
+                if(bil_desimal<0)
+                    negatif = 1;
+                Konversi_Biner(bil_desimal);
+                bit = Hitung_Bit(TOP);
+                Cetak_Biner(TOP,bit,negatif,bil_desimal);
+                break;
+            case 2:
+                printf("\nMasukan bilangan desimal = ");
+                scanf("%d", &bil_desimal);
+                //pengecekan apakah input adalah bilangan negatif
+                negatif = 0;
+                if(bil_desimal<0)
+                    negatif = 1;
+                Konversi_Oktal(bil_desimal);
+                Cetak_Oktal(TOP, negatif);
+                break;
+            case 3:
+                puts("Terima kasih telah menggunakan program ini...(^_^)");
+                break;
+            default:
+                puts("Pilihan TIDAK VALID!");
+                puts("Silahkan memilih menu yang tersedia (1-3)");
+                break;
+        }
+        puts("");
+        jeda();
+        puts("============================================\n");
+        TOP = reset_stack(TOP); 
+        TOPnegatif = reset_stack(TOPnegatif);
+        //mereset stack agar tidak terjadi error ketika menggunakan program kembali
+    } while (pilihan != 3);
+      
+    return 0;
+}
